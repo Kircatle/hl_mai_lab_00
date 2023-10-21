@@ -2,14 +2,77 @@ version: '3.1'
 
 services:
 
-  db:
-    image: mariadb
-    restart: always
-    environment:
-      MARIADB_ROOT_PASSWORD: example
+  db-delivery-1:
+      build:
+        context: docker/database
+        dockerfile: Dockerfile
+      container_name: db-delivery-1
+      restart: unless-stopped
+      environment:
+        MYSQL_DATABASE: $MARIADB_NAME
+        MYSQL_USER: $MARIADB_USER
+        MYSQL_PASSWORD: $MARIADB_PASSWORD
+        MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+      command: >
+        --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+        --general-log=ON
+        --log-queries-not-using-indexes=ON
+      networks:
+        - delivery-network
+      ports:
+        - 3360:3306
+      volumes:
+        - db-delivery-1:/var/lib/mysql
 
-  adminer:
-    image: adminer
-    restart: always
+  db-delivery-2:
+    build:
+      context: docker/database
+      dockerfile: Dockerfile
+    container_name: db-delivery-2
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: $MARIADB_NAME
+      MYSQL_USER: $MARIADB_USER
+      MYSQL_PASSWORD: $MARIADB_PASSWORD
+      MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+    networks:
+      - delivery-network
     ports:
-      - 8080:8080
+      - 3361:3306
+    volumes:
+      - db-delivery-2:/var/lib/mysql
+
+  db-delivery-3:
+    build:
+      context: docker/database
+      dockerfile: Dockerfile
+    container_name: db-delivery-3
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: $MARIADB_NAME
+      MYSQL_USER: $MARIADB_USER
+      MYSQL_PASSWORD: $MARIADB_PASSWORD
+      MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+    networks:
+      - delivery-network
+    ports:
+      - 3362:3306
+    volumes:
+      - db-delivery-3:/var/lib/mysql
+
+volumes:
+  db-delivery-1:
+  db-delivery-2:
+  db-delivery-3:
+
+networks:
+  delivery-network:
+    driver: "bridge"
