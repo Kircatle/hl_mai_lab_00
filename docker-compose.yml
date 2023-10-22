@@ -13,6 +13,11 @@ services:
         MYSQL_USER: $MARIADB_USER
         MYSQL_PASSWORD: $MARIADB_PASSWORD
         MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+      configs:
+          - source: mariadb_conf1
+            target: /etc/mysql/my.cnf
+          - source: mariadb_conf2
+            target: /etc/mysql/mysql.conf.d/mysqld.cnf
       command: >
         --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
         --general-log=ON
@@ -35,6 +40,11 @@ services:
       MYSQL_USER: $MARIADB_USER
       MYSQL_PASSWORD: $MARIADB_PASSWORD
       MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+    configs:
+        - source: mariadb_conf1
+          target: /etc/mysql/my.cnf
+        - source: mariadb_conf2
+          target: /etc/mysql/mysql.conf.d/mysqld.cnf
     command: >
       --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
       --general-log=ON
@@ -57,6 +67,11 @@ services:
       MYSQL_USER: $MARIADB_USER
       MYSQL_PASSWORD: $MARIADB_PASSWORD
       MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+    configs:
+        - source: mariadb_conf1
+          target: /etc/mysql/my.cnf
+        - source: mariadb_conf2
+          target: /etc/mysql/mysql.conf.d/mysqld.cnf
     command: >
       --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
       --general-log=ON
@@ -68,11 +83,45 @@ services:
     volumes:
       - db-delivery-3:/var/lib/mysql
 
+
+  proxysql:
+    build:
+      context: docker/proxysql
+      dockerfile: Dockerfile
+    healthcheck:
+      test: "/usr/bin/mysql -h 127.0.0.1 -P $PROXYSQL_CLIENT_PORT --user=$MARIADB_USER --password=$MARIADB_PASSWORD --execute \"SHOW DATABASES;\""
+      timeout: 20s
+      retries: 5
+    networks:
+      - delivery-network
+    configs:
+        - source: proxysql_conf
+          target: /etc/proxysql.cnf
+    ports:
+      - $PROXYSQL_CLIENT_PORT:$PROXYSQL_CLIENT_PORT
+      - $PROXYSQL_ADMIN_PORT:$PROXYSQL_ADMIN_PORT
+    depends_on:
+      - db-delivery-1
+      - db-delivery-2
+      - db-delivery-3
+    volumes:
+      - proxysql-data:/var/lib/proxysql
+
 volumes:
   db-delivery-1:
   db-delivery-2:
   db-delivery-3:
+  proxysql-data:
 
 networks:
   delivery-network:
     driver: "bridge"
+
+
+configs:
+  mariadb_conf1:
+    file: ./docker/database/my.cnf
+  mariadb_conf2:
+    file: ./docker/database/config/mysqld.cnf
+  proxysql_conf:
+    file: ./docker/proxysql/proxysql.cnf
