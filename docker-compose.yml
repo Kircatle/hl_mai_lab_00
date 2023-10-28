@@ -25,7 +25,7 @@ services:
       networks:
         - delivery-network
       ports:
-        - 3360:3306
+        - $EXTERNAL_NODE1_PORT:3306
       volumes:
         - db-delivery-1:/var/lib/mysql
 
@@ -52,7 +52,7 @@ services:
     networks:
       - delivery-network
     ports:
-      - 3361:3306
+      - $EXTERNAL_NODE2_PORT:3306
     volumes:
       - db-delivery-2:/var/lib/mysql
 
@@ -79,7 +79,7 @@ services:
     networks:
       - delivery-network
     ports:
-      - 3362:3306
+      - $EXTERNAL_NODE3_PORT:3306
     volumes:
       - db-delivery-3:/var/lib/mysql
 
@@ -88,6 +88,7 @@ services:
     build:
       context: docker/proxysql
       dockerfile: Dockerfile
+    container_name: db-delivery-proxy
     healthcheck:
       test: "/usr/bin/mysql -h 127.0.0.1 -P $PROXYSQL_CLIENT_PORT --user=$MARIADB_USER --password=$MARIADB_PASSWORD --execute \"SHOW DATABASES;\""
       timeout: 20s
