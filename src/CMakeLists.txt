@@ -34,7 +34,9 @@ add_executable(${service} main.cpp
         # cache/cache.cpp
         config/config.cpp
         models/database.cpp
-        models/user.cpp)
+        models/user.cpp
+        models/package.cpp
+        models/delivery.cpp)
 
 target_include_directories(${service} PRIVATE "${CMAKE_BINARY_DIR}")
 target_compile_options(${service} PRIVATE -Wall -Wextra -pedantic -Werror )

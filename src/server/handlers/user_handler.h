@@ -63,7 +63,7 @@ class UserHandler : public HTTPRequestHandler
             return false;
         }
         return true;
-    }
+    };
 
     bool check_name(const std::string &name, std::string &reason)
     {

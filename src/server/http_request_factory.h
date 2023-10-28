@@ -39,7 +39,7 @@ using Poco::Util::OptionSet;
 using Poco::Util::ServerApplication;
 
 #include "handlers/user_handler.h"
-
+#include "handlers/package_handler.h"
 class HTTPRequestFactory : public HTTPRequestHandlerFactory
 {
     public:
@@ -50,6 +50,8 @@ class HTTPRequestFactory : public HTTPRequestHandlerFactory
             std::cout << "Request URI: " << request.getURI() << std::endl;
             if (request.getURI().find("/user") != std::string::npos)
                 return new UserHandler(_format);
+            else if (request.getURI().find("/package") != std::string::npos)
+                return new PackageHandler(_format);
             return 0;
         }
 
