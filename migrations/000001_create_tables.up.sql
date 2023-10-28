@@ -5,7 +5,7 @@ create table if not exists delivery
     package_id varchar(36) not null,
     sender_id varchar(36) not null,
     receiver_id  varchar(36) not null,
-    departure_date datetime,
+    departure_date text,
     start_point text,
     destination text,
     status text

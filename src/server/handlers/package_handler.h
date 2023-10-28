@@ -116,10 +116,7 @@ class PackageHandler : public HTTPRequestHandler
                     }
                     if (!check_result)
                     {
-                        response.setStatus(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
-                        std::ostream &ostr = response.send();
-                        ostr << message;
-                        response.send();
+                        send_not_found_exception(message, "/package", response);
                         return;
                     }
 
@@ -137,11 +134,14 @@ class PackageHandler : public HTTPRequestHandler
                     else
                     {
                         send_not_found_exception("User have not packages", "/package", response);
+                        return;
                     }
                 }
                 else if (path == "/package" && request.getMethod() == HTTPRequest::HTTP_GET)
                 {
                     send_not_found_exception("Please specify id or user_id","/package", response);
+                    return;
+
                 }
                 else if (path == "/package" && request.getMethod() == HTTPRequest::HTTP_POST)
                 {
@@ -212,6 +212,7 @@ class PackageHandler : public HTTPRequestHandler
             catch (...) {}
 
             send_not_found_exception("Request receiver with path: " + path + " not found", "", response);
+            return;
         }
 
     private:

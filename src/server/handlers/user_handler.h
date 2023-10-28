@@ -239,10 +239,7 @@ class UserHandler : public HTTPRequestHandler
                     }
                     else
                     {
-                        response.setStatus(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
-                        std::ostream &ostr = response.send();
-                        ostr << message;
-                        response.send();
+                        send_not_found_exception(message, "/user/auth", response);
                         return;
                     }
                    
@@ -296,11 +293,13 @@ class UserHandler : public HTTPRequestHandler
                     else
                     {
                         send_not_found_exception("User not found", "/user", response);
+                        return;
                     }
                 }
                 else if (path == "/user/auth" && request.getMethod() == HTTPRequest::HTTP_GET)
                 {
                     send_not_found_exception("Missing login or email or password", "/user/auth", response);
+                    return;
 
                 }
                 else if (path == "/user/find" && request.getMethod() == HTTPRequest::HTTP_GET && (form.has("login") || form.has("email") || (form.has("first_name") && form.has("last_name"))))
@@ -380,6 +379,7 @@ class UserHandler : public HTTPRequestHandler
             catch (...) {}
 
             send_not_found_exception("Request receiver with path: " + path + " not found", "", response);
+            return;
         }
 
     private:

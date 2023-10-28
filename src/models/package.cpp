@@ -70,8 +70,8 @@ namespace models
         Poco::Dynamic::Var result = parser.parse(json);
         Poco::JSON::Object::Ptr object = result.extract<Poco::JSON::Object::Ptr>();
 
-        package.package_uuid = object->getValue<std::string>("package_uuid");
-        package.user_uuid = object->getValue<std::string>("user_uuid");
+        package.package_uuid = object->getValue<std::string>("id");
+        package.user_uuid = object->getValue<std::string>("user_id");
         package.title = object->getValue<std::string>("title");
         package.width = object->getValue<double>("width");
         package.height = object->getValue<double>("height");
@@ -86,7 +86,7 @@ namespace models
         Poco::JSON::Object::Ptr object = new Poco::JSON::Object();
 
         object->set("id", package_uuid);
-        object->set("user_uuid", user_uuid);
+        object->set("user_id", user_uuid);
         object->set("title", title);
         object->set("width", width);
         object->set("height", height);
