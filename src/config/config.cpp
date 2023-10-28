@@ -3,12 +3,28 @@
 #include "config.h"
 
 Config::Config()
-{
+{   
     _host = std::getenv("DATABASE_HOST");
     _port = std::getenv("DATABASE_PORT");
     _login = std::getenv("DATABASE_LOGIN");
     _password = std::getenv("DATABASE_PASSWORD");
     _database = std::getenv("DATABASE_NAME");
+    if (std::getenv("URL_USER_SERVICE") == NULL)
+    {
+        _url_user_service = "";
+    }
+    else
+    {
+        _url_user_service = std::getenv("URL_USER_SERVICE");
+    }
+    if (std::getenv("APPLICATION_PORT")==NULL)
+    {
+        _application_port = "";
+    }
+    else
+    {
+        _application_port = std::getenv("APPLICATION_PORT");
+    }
 }
 
 Config &Config::get_instanse()
@@ -40,4 +56,14 @@ const std::string &Config::get_password()
 const std::string &Config::get_database_path()
 {
     return _database;
+}
+
+const std::string &Config::get_url_user_service()
+{
+    return _url_user_service;
+}
+
+const std::string &Config::get_application_port()
+{
+    return _url_user_service;
 }

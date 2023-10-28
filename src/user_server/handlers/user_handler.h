@@ -50,6 +50,7 @@ using Poco::Util::ServerApplication;
 
 #include "../../models/user.h"
 #include "../../helpers/send_not_found_exception.h"
+#include "../../helpers/identity_helper.h"
 
 class UserHandler : public HTTPRequestHandler
 {
@@ -245,16 +246,19 @@ class UserHandler : public HTTPRequestHandler
                    
                 }
 
-                else if (path == "/user/auth" && request.getMethod() == HTTPRequest::HTTP_GET && ((form.has("login") || form.has("email")) && form.has("password")))
+                else if (path == "/user/auth" && request.getMethod() == HTTPRequest::HTTP_GET)
                 {
-                    std::string login = form.get("login", "");
-                    std::string email = form.get("email", "");
-                    std::string password = form.get("password", "");
-
+                    std::string login;
+                    std::string password;
+                    std::string scheme;
+                    std::string info;
+                    request.getCredentials(scheme, info);
+                    get_identity(info,login,password);
                     std::optional<models::User> result;
-                    if (login.empty() && email.empty())
+                    std::cout << login << password;
+                    if (login.empty())
                     {
-                        send_not_found_exception("Missing login or email", "/user/auth", response);
+                        send_not_found_exception("Missing login", "/user/auth", response);
                         return;
                     }
                     else if (password.empty())
@@ -266,10 +270,6 @@ class UserHandler : public HTTPRequestHandler
                     if (!login.empty())
                     {
                         result = models::User::auth_by_login(login, password);
-                    }
-                    else if (!email.empty())
-                    {
-                        result = models::User::auth_by_email(email, password);
                     }
                     else
                     {
@@ -288,19 +288,14 @@ class UserHandler : public HTTPRequestHandler
                     {
                         response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
                         std::ostream &ostr = response.send();
-                        Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                        ostr << "{ \"id\" : \"" << result->get_user_uuid() << "\"}" << std::endl;
+                        // Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
                     }
                     else
                     {
                         send_not_found_exception("User not found", "/user", response);
                         return;
                     }
-                }
-                else if (path == "/user/auth" && request.getMethod() == HTTPRequest::HTTP_GET)
-                {
-                    send_not_found_exception("Missing login or email or password", "/user/auth", response);
-                    return;
-
                 }
                 else if (path == "/user/find" && request.getMethod() == HTTPRequest::HTTP_GET && (form.has("login") || form.has("email") || (form.has("first_name") && form.has("last_name"))))
                 {

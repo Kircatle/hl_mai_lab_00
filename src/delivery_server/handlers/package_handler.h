@@ -25,7 +25,8 @@
 #include <iostream>
 #include <fstream>
 #include "Poco/StreamCopier.h"
-
+#include <Poco/Base64Encoder.h>
+#include "Poco/Net/HTTPClientSession.h"
 using Poco::DateTimeFormat;
 using Poco::DateTimeFormatter;
 using Poco::ThreadPool;
@@ -50,23 +51,102 @@ using Poco::Util::ServerApplication;
 
 #include "../../models/package.h"
 #include "../../helpers/send_not_found_exception.h"
-#include "../../models/user.h"
+#include "../../helpers/identity_helper.h"
+#include "../../helpers/send_unauthorized_exception.h"
 
 class PackageHandler : public HTTPRequestHandler
 {
   private:
 
-    bool check_user_uuid(std::string &user_uuid, std::string &reason)
+ bool check_user_uuid(std::string &user_uuid, std::string &reason)
     {
-        std::optional<models::User> user = models::User::get_by_id(user_uuid);
-        if (user)
+        std::string string_result;
+        try
         {
-            return true;
-        }
-        reason = "User not found";
-        return false;
-    };
+            
+            std::string url = "http://localhost:5055/user?id="+user_uuid;
+            Poco::URI uri(url);
+            Poco::Net::HTTPClientSession s(uri.getHost(), uri.getPort());
+            Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, uri.toString());
+            request.setVersion(Poco::Net::HTTPMessage::HTTP_1_1);
+            request.setContentType("application/json");
+            request.set("Accept", "application/json");
+            request.setKeepAlive(true);
 
+            s.sendRequest(request);
+
+            Poco::Net::HTTPResponse response;
+            std::istream &rs = s.receiveResponse(response);
+
+            while (rs)
+            {
+                char c{};
+                rs.read(&c, 1);
+                if (rs)
+                    string_result += c;
+            }
+            if (response.getStatus() != 200)
+            {
+                reason = "User "+user_uuid+" not found";
+                return false;
+            }
+        }
+        catch (Poco::Exception &ex)
+        {
+            reason = "Error send auth request";
+            std::cout << "exception:" << ex.what() << std::endl;
+            return false;
+        }
+
+        return true;
+    };
+    
+    
+    std::optional<std::string> auth(const std::string &url, const std::string &login, const std::string &password)
+    {
+        std::string string_result;
+        try
+        {
+            std::string token = login + ":" + password;
+            std::ostringstream os;
+            Poco::Base64Encoder b64in(os);
+            b64in << token;
+            b64in.close();
+            std::string identity = "Basic " + os.str();
+
+            Poco::URI uri(url);
+            Poco::Net::HTTPClientSession s(uri.getHost(), uri.getPort());
+            Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, uri.toString());
+            request.setVersion(Poco::Net::HTTPMessage::HTTP_1_1);
+            request.setContentType("application/json");
+            request.set("Authorization", identity);
+            request.set("Accept", "application/json");
+            request.setKeepAlive(true);
+
+            s.sendRequest(request);
+
+            Poco::Net::HTTPResponse response;
+            std::istream &rs = s.receiveResponse(response);
+
+            while (rs)
+            {
+                char c{};
+                rs.read(&c, 1);
+                if (rs)
+                    string_result += c;
+            }
+
+            if (response.getStatus() != 200)
+                return {};
+        }
+        catch (Poco::Exception &ex)
+        {
+            std::cout << "exception:" << ex.what() << std::endl;
+            return std::optional<std::string>();
+        }
+
+        return string_result;
+    }
 
     public:
         PackageHandler(const std::string &format) : _format(format) {}
@@ -83,6 +163,29 @@ class PackageHandler : public HTTPRequestHandler
             std::string requestBody = oss.str();
             std::cout << "Request body = " + requestBody << std::endl;
             HTMLForm form(request,stream);
+            std::string scheme;
+            std::string info;
+            std::string login, password;
+            request.getCredentials(scheme, info);
+            if (scheme == "Basic")
+            {
+                get_identity(info, login, password);
+                std::cout << "login:" << login << std::endl;
+                std::cout << "password:" << password << std::endl;
+                std::string host = "localhost";
+                std::string url;
+                url = "http://" + host + ":5055/user/auth";
+                if (!auth(url,login,password))
+                {
+                    send_unauthorized_exception("unath", response);
+                    return;
+                }
+            }
+            else
+            {
+                send_unauthorized_exception("unath", response);
+                return; 
+            }
             try 
             {
                 if (path == "/package" && form.has("id") && request.getMethod() == HTTPRequest::HTTP_GET)
