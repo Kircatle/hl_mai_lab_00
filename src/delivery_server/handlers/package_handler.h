@@ -53,6 +53,7 @@ using Poco::Util::ServerApplication;
 #include "../../helpers/send_not_found_exception.h"
 #include "../../helpers/identity_helper.h"
 #include "../../helpers/send_unauthorized_exception.h"
+#include "../../config/config.h"
 
 class PackageHandler : public HTTPRequestHandler
 {
@@ -61,10 +62,11 @@ class PackageHandler : public HTTPRequestHandler
  bool check_user_uuid(std::string &user_uuid, std::string &reason)
     {
         std::string string_result;
+        Config &config = Config::get_instanse();
         try
         {
             
-            std::string url = "http://localhost:5055/user?id="+user_uuid;
+            std::string url = "http://"+config.get_url_user_service()+"/user?id="+user_uuid;
             Poco::URI uri(url);
             Poco::Net::HTTPClientSession s(uri.getHost(), uri.getPort());
             Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, uri.toString());
