@@ -36,7 +36,7 @@ namespace models
                         << "package_id varchar(36) not null,"
                         << "sender_id varchar(36) not null,"
                         << "receiver_id  varchar(36) not null,"
-                        << "departure_date datetime,"
+                        << "departure_date text,"
                         << "start_point text,"
                         << "destination text,"
                         << "status text"
@@ -103,10 +103,13 @@ namespace models
     {
         try
         {
+    
+            std::cout << "\ntest1\n" << delivery_uuid;
             Poco::Data::Session session = database::Database::get_instance().create_database_session();
             Poco::Data::Statement select(session);
             Delivery output;
-            select << "select id,package_id,sender_id,receiver_id,departure_date, start_point, destination, status from delivery.delivery where id=?",
+            std::cout << "\ntest2\n" << delivery_uuid;
+            select << "select id, package_id, sender_id, receiver_id, departure_date, start_point, destination, status from delivery where id=?",
                 into(output.delivery_uuid),
                 into(output.package_uuid),
                 into(output.sender_uuid),
@@ -117,8 +120,9 @@ namespace models
                 into(output.status),
                 use(delivery_uuid),
                 range(0, 1);
-
+            std::cout << select.toString() << delivery_uuid;
             select.execute();
+            std::cout << "\ntest3\n";
             Poco::Data::RecordSet rs(select);
             if (rs.moveFirst()) return output;
         }
@@ -128,6 +132,11 @@ namespace models
             throw;
         }
         catch (Poco::Data::MySQL::StatementException &e)
+        {
+            std::cout << "Database statement exception:" << e.what() << std::endl;
+            throw;
+        }
+        catch (std::exception &e)
         {
             std::cout << "Database statement exception:" << e.what() << std::endl;
             throw;

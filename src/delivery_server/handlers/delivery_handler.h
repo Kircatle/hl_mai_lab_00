@@ -212,6 +212,7 @@ class DeliveryHandler : public HTTPRequestHandler
                             response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
                             std::ostream &ostr = response.send();
                             Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                            return;
                         }
                         else
                         {
