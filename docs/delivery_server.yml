@@ -1,0 +1,257 @@
+openapi: '3.0.0'
+info:
+  version: '1.0.0'
+  title: 'Delivery server'
+  description: API сервиса доставки
+servers:
+  - url: http://localhost:8081
+    description: Доставки и Посылки
+paths:
+  /package:
+    get:
+      summary: Получение посылок (по пользователю или по id)
+      parameters:
+      - name: id
+        description: идентификатор посылки
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: user_id
+        description: идентификатор пользователя
+        in: query
+        required: false
+        schema:
+          type: string
+      
+     
+      responses:
+        '200':
+          description: Список посылок
+          content:
+            application/json:
+              schema:
+               type: array
+               items: 
+                $ref: '#/components/schemas/Package'
+        401:
+          description: Not authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthrizedResponse'
+        404:
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponse'
+    post:
+      summary: Создать посылку
+      requestBody:
+        description: Посылка
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/Package'
+
+      responses:
+        '200':
+          description: Package
+          content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Package'
+        401:
+          description: Not authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthrizedResponse'
+        404:
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponse'
+ 
+  /delivery:
+
+    get:
+      summary: Получение доставок (по отпавителю, получателю или посылке)
+      parameters:
+      - name: id
+        description: идентификатор доставки
+        in: query
+        required: false
+        schema:
+          type: string
+          format: int64
+      - name: package_id
+        description: идентификатор посылки
+        in: query
+        required: false
+        schema:
+          type: string
+          format: int64
+      - name: receiver_id
+        description: идентификатор получателя
+        in: query
+        required: false
+        schema:
+          type: string
+          format: int64
+      - name: sender_id
+        description: идентификатор отправителя
+        in: query
+        required: false
+        schema:
+          type: string
+          format: int64
+      responses:
+        '200':
+          description: array of messages
+          content:
+            application/json:
+              schema:
+               type: array
+               items: 
+                $ref: '#/components/schemas/Delivery'
+        '401':
+          description: Not authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthrizedResponse'      
+    post:
+      summary: Создать новую доставку
+      requestBody:
+        description: Посылка
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/Delivery'
+      responses:
+        '200':
+          description: Delivery
+          content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Delivery'
+        '401':
+          description: Not authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthrizedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponse'
+components:
+  schemas:
+    Package:
+      type: object
+      properties:
+        id:
+          type: string
+          format: string
+        user_id:
+          type: string
+        title:
+          type: string
+        length:
+          type: integer
+          format: int64
+        height:
+          type: integer
+          format: int64
+        width:
+          type: integer
+          format: int64
+        description:
+          type: string
+    Delivery:
+      type: object
+      required:
+        - id
+        - text
+        - created_at
+        - author_id
+      properties:
+        departure_date:
+          type: string
+        destination:
+          type: string
+        id:
+          type: string
+        package_id:
+          type: string
+        receiver_id:
+          type: string
+        sender_id:
+          type: string
+        start_point:
+          type: string
+        status:
+          type: string
+
+  
+    UnauthrizedResponse:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+        instance:
+          type: string
+          
+    NotFoundResponse:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+        instance:
+          type: string
+          
+    OkResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+        
+  securitySchemes:
+      basicAuth:     
+        type: http
+        scheme: basic
+security:
+  - basicAuth: []

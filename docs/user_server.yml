@@ -1,0 +1,208 @@
+openapi: '3.0.0'
+info:
+  version: '1.0.0'
+  title: 'Delivery server'
+  description: API сервиса аутентификации
+servers:
+  - url: http://localhost:8081
+    description: аутентификация
+paths:
+  /user:
+    get:
+      summary: Получение пользователей
+      parameters:
+      - name: id
+        description: идентификатор пользователя
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: login
+        description: login пользователя
+        in: query
+        required: false
+        schema:
+          type: string
+      
+     
+      responses:
+        '200':
+          description: Список посылок
+          content:
+            application/json:
+              schema:
+               type: array
+               items: 
+                $ref: '#/components/schemas/User'
+        404:
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponse'
+    post:
+      summary: Создать пользователя
+      requestBody:
+        description: пользователь
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/User'
+
+      responses:
+        '200':
+          description: Package
+          content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/User'
+        404:
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponse'
+ 
+  /user/auth:
+
+    get:
+      summary: Аутентификация
+      responses:
+        '200':
+          description: array of messages
+          content:
+            application/json:
+              schema:
+               type: array
+               items: 
+                $ref: '#/components/schemas/Auth'
+        '401':
+          description: Not authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthrizedResponse'
+  /user/find:
+
+    get:
+      summary: Поиск пользователей
+      parameters:
+      - name: login
+        description: login
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: email
+        description: email
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: first_name
+        description: имя
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: last_name
+        description: фамилия
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: array of messages
+          content:
+            application/json:
+              schema:
+               type: array
+               items: 
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponse'    
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        login:
+          type: string
+        password:
+          type: string
+        title:
+          type: string
+        email:
+          type: string
+    Auth:
+      type: object
+      properties:
+        id:
+          type: string
+  
+    UnauthrizedResponse:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+        instance:
+          type: string
+          
+    NotFoundResponse:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+        instance:
+          type: string
+          
+    OkResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+        
+  securitySchemes:
+      basicAuth:     
+        type: http
+        scheme: basic
+security:
+  - basicAuth: []
