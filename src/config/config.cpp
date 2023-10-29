@@ -65,5 +65,5 @@ const std::string &Config::get_url_user_service()
 
 const std::string &Config::get_application_port()
 {
-    return _url_user_service;
+    return _application_port;
 }

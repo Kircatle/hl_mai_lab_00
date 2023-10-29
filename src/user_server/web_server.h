@@ -69,7 +69,6 @@ class WebServer : public Poco::Util::ServerApplication
                 ServerSocket svs(Poco::Net::SocketAddress("0.0.0.0", config.get_application_port()));
                 HTTPServer srv(new HTTPRequestFactory(DateTimeFormat::SORTABLE_FORMAT), svs, new HTTPServerParams);
                 srv.start();
-                std::cout << "Server has been started! Adress " << std::getenv("SERVER_HOST") << ":" << std::getenv("SERVER_PORT") << std::endl;
                 waitForTerminationRequest();
                 srv.stop();
             }
