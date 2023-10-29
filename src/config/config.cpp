@@ -17,13 +17,13 @@ Config::Config()
     {
         _url_user_service = std::getenv("URL_USER_SERVICE");
     }
-    if (std::getenv("APPLICATION_PORT")==NULL)
+    if (std::getenv("APP_PORT")==NULL)
     {
         _application_port = "";
     }
     else
     {
-        _application_port = std::getenv("APPLICATION_PORT");
+        _application_port = std::getenv("APP_PORT");
     }
 }
 

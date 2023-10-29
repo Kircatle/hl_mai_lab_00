@@ -39,6 +39,7 @@ using Poco::Util::ServerApplication;
 #include "http_request_factory.h"
 #include "../models/delivery.h"
 #include "../models/package.h"
+#include "../config/config.h"
 
 class WebServer : public Poco::Util::ServerApplication
 {
@@ -61,12 +62,13 @@ class WebServer : public Poco::Util::ServerApplication
 
         int main([[maybe_unused]] const std::vector<std::string> &args)
         {
+            Config &config = Config::get_instanse();
             if (!_helpRequested)
             {
                 // models::User::init();
                 models::Package::init();
                 models::Delivery::init();
-                ServerSocket svs(Poco::Net::SocketAddress("0.0.0.0", 5056));
+                ServerSocket svs(Poco::Net::SocketAddress("0.0.0.0", config.get_application_port()));
                 HTTPServer srv(new HTTPRequestFactory(DateTimeFormat::SORTABLE_FORMAT), svs, new HTTPServerParams);
                 srv.start();
                 waitForTerminationRequest();

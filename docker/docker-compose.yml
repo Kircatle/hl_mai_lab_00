@@ -1,0 +1,172 @@
+version: '3.1'
+
+services:
+
+  db-delivery-1:
+      build:
+        context: docker/database
+        dockerfile: Dockerfile
+      container_name: db-delivery-1
+      restart: unless-stopped
+      environment:
+        MYSQL_DATABASE: $MARIADB_NAME
+        MYSQL_USER: $MARIADB_USER
+        MYSQL_PASSWORD: $MARIADB_PASSWORD
+        MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+      configs:
+          - source: mariadb_conf1
+            target: /etc/mysql/my.cnf
+          - source: mariadb_conf2
+            target: /etc/mysql/mysql.conf.d/mysqld.cnf
+      command: >
+        --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+        --general-log=ON
+        --log-queries-not-using-indexes=ON
+      networks:
+        - delivery-network
+      ports:
+        - $EXTERNAL_NODE1_PORT:3306
+      volumes:
+        - db-delivery-1:/var/lib/mysql
+
+  db-delivery-2:
+    build:
+      context: docker/database
+      dockerfile: Dockerfile
+    container_name: db-delivery-2
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: $MARIADB_NAME
+      MYSQL_USER: $MARIADB_USER
+      MYSQL_PASSWORD: $MARIADB_PASSWORD
+      MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+    configs:
+        - source: mariadb_conf1
+          target: /etc/mysql/my.cnf
+        - source: mariadb_conf2
+          target: /etc/mysql/mysql.conf.d/mysqld.cnf
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+    networks:
+      - delivery-network
+    ports:
+      - $EXTERNAL_NODE2_PORT:3306
+    volumes:
+      - db-delivery-2:/var/lib/mysql
+
+  db-delivery-3:
+    build:
+      context: docker/database
+      dockerfile: Dockerfile
+    container_name: db-delivery-3
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: $MARIADB_NAME
+      MYSQL_USER: $MARIADB_USER
+      MYSQL_PASSWORD: $MARIADB_PASSWORD
+      MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+    configs:
+        - source: mariadb_conf1
+          target: /etc/mysql/my.cnf
+        - source: mariadb_conf2
+          target: /etc/mysql/mysql.conf.d/mysqld.cnf
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+    networks:
+      - delivery-network
+    ports:
+      - $EXTERNAL_NODE3_PORT:3306
+    volumes:
+      - db-delivery-3:/var/lib/mysql
+
+
+  proxysql:
+    build:
+      context: docker/proxysql
+      dockerfile: Dockerfile
+    container_name: db-delivery-proxy
+    healthcheck:
+      test: "/usr/bin/mysql -h 127.0.0.1 -P $PROXYSQL_CLIENT_PORT --user=$MARIADB_USER --password=$MARIADB_PASSWORD --execute \"SHOW DATABASES;\""
+      timeout: 20s
+      retries: 5
+    networks:
+      - delivery-network
+    configs:
+        - source: proxysql_conf
+          target: /etc/proxysql.cnf
+    ports:
+      - $PROXYSQL_CLIENT_PORT:$PROXYSQL_CLIENT_PORT
+      - $PROXYSQL_ADMIN_PORT:$PROXYSQL_ADMIN_PORT
+    depends_on:
+      - db-delivery-1
+      - db-delivery-2
+      - db-delivery-3
+    volumes:
+      - proxysql-data:/var/lib/proxysql
+
+
+  user_server:
+    build:
+      context: docker/user_server
+      dockerfile: Dockerfile
+    container_name: user_server
+    environment:
+      - DATABASE_HOST=$USER_APP_DATABASE_HOST
+      - DATABASE_PORT=$USER_APP_DATABASE_PORT
+      - DATABASE_LOGIN=$USER_APP_DATABASE_LOGIN
+      - DATABASE_PASSWORD=$USER_APP_DATABASE_PASSWORD
+      - DATABASE_NAME=$USER_APP_DATABASE_NAME
+      - APP_PORT=$USER_APP_PORT
+    ports:
+      - $USER_APP_EXTERNAL_PORT:$USER_APP_PORT
+    networks:
+      - delivery-network
+    depends_on:
+      proxysql:
+        condition: service_healthy
+
+    
+  delivery_server:
+    build:
+      context: docker/delivery_server
+      dockerfile: Dockerfile
+    container_name: delivery_server
+    environment:
+      - DATABASE_HOST=$DELIVERY_APP_DATABASE_HOST
+      - DATABASE_PORT=$DELIVERY_APP_DATABASE_PORT
+      - DATABASE_LOGIN=$DELIVERY_APP_DATABASE_LOGIN
+      - DATABASE_PASSWORD=$DELIVERY_APP_DATABASE_PASSWORD
+      - DATABASE_NAME=$DELIVERY_APP_DATABASE_NAME
+      - APP_PORT=$DELIVERY_APP_PORT
+      - URL_USER_SERVICE=$URL_USER_SERVICE
+    ports:
+      - $DELIVERY_APP_EXTERNAL_PORT:$DELIVERY_APP_PORT
+    networks:
+      - delivery-network
+    depends_on:
+      proxysql:
+        condition: service_healthy
+
+
+volumes:
+  db-delivery-1:
+  db-delivery-2:
+  db-delivery-3:
+  proxysql-data:
+
+networks:
+  delivery-network:
+    driver: "bridge"
+
+
+configs:
+  mariadb_conf1:
+    file: ./docker/database/my.cnf
+  mariadb_conf2:
+    file: ./docker/database/config/mysqld.cnf
+  proxysql_conf:
+    file: ./docker/proxysql/proxysql.cnf
