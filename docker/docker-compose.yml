@@ -18,6 +18,10 @@ services:
             target: /etc/mysql/my.cnf
           - source: mariadb_conf2
             target: /etc/mysql/mysql.conf.d/mysqld.cnf
+      healthcheck:
+        test: "/usr/bin/mariadb --user=$MARIADB_USER --password=$MARIADB_PASSWORD --execute \"SHOW DATABASES;\""
+        timeout: 20s
+        retries: 5
       command: >
         --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
         --general-log=ON
@@ -45,6 +49,10 @@ services:
           target: /etc/mysql/my.cnf
         - source: mariadb_conf2
           target: /etc/mysql/mysql.conf.d/mysqld.cnf
+    healthcheck:
+      test: "/usr/bin/mariadb --user=$MARIADB_USER --password=$MARIADB_PASSWORD --execute \"SHOW DATABASES;\""
+      timeout: 20s
+      retries: 5
     command: >
       --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
       --general-log=ON
@@ -56,32 +64,32 @@ services:
     volumes:
       - db-delivery-2:/var/lib/mysql
 
-  db-delivery-3:
-    build:
-      context: database
-      dockerfile: Dockerfile
-    container_name: db-delivery-3
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: $MARIADB_NAME
-      MYSQL_USER: $MARIADB_USER
-      MYSQL_PASSWORD: $MARIADB_PASSWORD
-      MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
-    configs:
-        - source: mariadb_conf1
-          target: /etc/mysql/my.cnf
-        - source: mariadb_conf2
-          target: /etc/mysql/mysql.conf.d/mysqld.cnf
-    command: >
-      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
-      --general-log=ON
-      --log-queries-not-using-indexes=ON
-    networks:
-      - delivery-network
-    ports:
-      - $EXTERNAL_NODE3_PORT:3306
-    volumes:
-      - db-delivery-3:/var/lib/mysql
+  # db-delivery-3:
+  #   build:
+  #     context: database
+  #     dockerfile: Dockerfile
+  #   container_name: db-delivery-3
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_DATABASE: $MARIADB_NAME
+  #     MYSQL_USER: $MARIADB_USER
+  #     MYSQL_PASSWORD: $MARIADB_PASSWORD
+  #     MYSQL_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+  #   configs:
+  #       - source: mariadb_conf1
+  #         target: /etc/mysql/my.cnf
+  #       - source: mariadb_conf2
+  #         target: /etc/mysql/mysql.conf.d/mysqld.cnf
+  #   command: >
+  #     --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+  #     --general-log=ON
+  #     --log-queries-not-using-indexes=ON
+  #   networks:
+  #     - delivery-network
+  #   ports:
+  #     - $EXTERNAL_NODE3_PORT:3306
+  #   volumes:
+  #     - db-delivery-3:/var/lib/mysql
 
 
   proxysql:
@@ -104,7 +112,7 @@ services:
     depends_on:
       - db-delivery-1
       - db-delivery-2
-      - db-delivery-3
+      # - db-delivery-3
     volumes:
       - proxysql-data:/var/lib/proxysql
 

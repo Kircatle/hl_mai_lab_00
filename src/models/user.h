@@ -25,12 +25,13 @@ namespace models
 
             static std::optional<User> get_by_id(std::string &id);
             static std::optional<User> get_by_login(std::string &login);
+            static std::optional<User> get_by_email(std::string &login);
             static std::optional<User> auth_by_login(std::string &login, std::string &password);
             static std::optional<User> auth_by_email(std::string &email, std::string &password);
-            static std::optional<User> find_by_login(std::string &login);
-            static std::optional<User> find_by_email(std::string &email);
+            static std::vector<User>  find_by_login(std::string &login);
+            static std::vector<User>  find_by_email(std::string &email);
             static std::vector<User> find_by_first_last_name(std::string &first_name, std::string &last_name);
-
+            long table_size();
             Poco::JSON::Object::Ptr to_json() const;
             void save_to_db();
             std::string get_user_uuid() const;
@@ -40,7 +41,7 @@ namespace models
             std::string get_last_name() const;
             std::string get_email() const;
             std::string get_title() const;
-
+            void set_user_uuid(std::string id);
             void set_login(std::string f_n);
             void set_password(std::string l_n);
             void set_first_name(std::string log);

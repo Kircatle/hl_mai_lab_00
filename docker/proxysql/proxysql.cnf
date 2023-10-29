@@ -44,12 +44,6 @@ mysql_servers =
         port=3306
         hostgroup=1
         max_connections=200
-    },
-    {
-        address="db-delivery-3"
-        port=3306
-        hostgroup=2
-        max_connections=200
     }
 )
 
@@ -89,11 +83,5 @@ mysql_query_rules:
         destination_hostgroup=1
         apply=1
     },
-    {
-        rule_id=3
-        active=1
-        match_pattern="-- sharding:2"
-        destination_hostgroup=2
-        apply=1
-    },
+
 )

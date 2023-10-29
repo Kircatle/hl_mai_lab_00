@@ -17,7 +17,9 @@ namespace database
             static Database &get_instance();
 
             Poco::Data::Session create_database_session();
-
+            static size_t get_max_shard();
+            static std::string get_sharding_hint(long hash);
+            static std::vector<std::string> get_all_sharding_hints();
     };
 }
 

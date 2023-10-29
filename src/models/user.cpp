@@ -1,7 +1,7 @@
 #include "user.h"
 #include "database.h"
 #include "../config/config.h"
-
+#include "../helpers/get_hash.h"
 #include <Poco/Data/MySQL/Connector.h>
 #include <Poco/Data/MySQL/MySQLException.h>
 #include <Poco/Data/SessionFactory.h>
@@ -13,67 +13,71 @@
 #include <exception>
 #include <future>
 
+
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 using namespace Poco::Data::Keywords;
 using Poco::Data::Session;
 using Poco::Data::Statement;
 
 namespace models
 {
-// create table if not exists user
-// (
-//     id varchar(36) default uuid() primary key,
-//     login text not null,
-//     password text not null,
-//     first_name text not null,
-//     last_name text not null,
-//     email text,
-//     title text
-// );
     void User::init()
     {
         try
         {
 
             Poco::Data::Session db_session = database::Database::get_instance().create_database_session();
-            Statement create_stmt(db_session);
-            Statement create_trigger(db_session);
-            Statement create_index_user_first_name_index(db_session);
-            Statement create_index_user_last_name_index(db_session);
-            Statement create_index_user_email_index(db_session);
-                create_stmt 
-                            << "create table if not exists user"
-                            << "("
-                            << "id varchar(36) default uuid() primary key,"
-                            << "login text not null,"
-                            << "password text not null,"
-                            << "first_name text not null,"
-                            << "last_name text not null,"
-                            << "email text,"
-                            << "title text,"
-                            << "UNIQUE (login),"
-                            << "UNIQUE (email)"
-                            << ");",
-                            now;
-                std::cout << create_stmt.toString() << std::endl;
-                create_trigger 
-                            << "CREATE TRIGGER IF NOT EXISTS last_uuiduser "
-                            << "AFTER INSERT ON user "
-                            << "FOR EACH ROW "
-                            << "SET @last_user_uuid = NEW.id;",
-                            now;
-                std::cout << create_trigger.toString() << std::endl;
-            create_index_user_first_name_index 
-                            << "create index if not exists user_first_name_index on user(first_name);",
-                            now;
-            std::cout << create_index_user_first_name_index.toString() << std::endl;
-            create_index_user_last_name_index
-                            << "create index if not exists user_last_name_index on user(last_name);",
-                            now;
-            std::cout << create_index_user_last_name_index.toString() << std::endl;
-            create_index_user_email_index
-                            << "create index if not exists user_email_index on user(email);",
-                            now;
-            std::cout << create_index_user_email_index.toString() << std::endl;
+           
+            std::vector<std::string> shardings = database::Database::get_all_sharding_hints();
+            for (std::string& shard : shardings) {
+                    std::cout << "\n"+shard+"\n";
+                    Statement create_stmt(db_session);
+                    Statement create_trigger(db_session);
+                    Statement create_index_user_first_name_index(db_session);
+                    Statement create_index_user_last_name_index(db_session);
+                    Statement create_index_user_email_index(db_session);
+                    create_stmt 
+                                << "create table if not exists user"
+                                << "("
+                                << "id varchar(36) default uuid() primary key,"
+                                << "login text not null,"
+                                << "password text not null,"
+                                << "first_name text not null,"
+                                << "last_name text not null,"
+                                << "email text,"
+                                << "title text,"
+                                << "UNIQUE (login),"
+                                << "UNIQUE (email)"
+                                << ");"
+                                << shard,
+                                now;
+                    std::cout << create_stmt.toString() << std::endl;
+                    create_trigger 
+                                << "CREATE TRIGGER IF NOT EXISTS last_uuiduser "
+                                << "AFTER INSERT ON user "
+                                << "FOR EACH ROW "
+                                << "SET @last_user_uuid = NEW.id;"
+                                << shard,
+                                now;
+                    std::cout << create_trigger.toString() << std::endl;
+                    create_index_user_first_name_index 
+                                << "create index if not exists user_first_name_index on user(first_name);"
+                                << shard,
+                                now;
+                    std::cout << create_index_user_first_name_index.toString() << std::endl;
+                    create_index_user_last_name_index
+                                << "create index if not exists user_last_name_index on user(last_name);"
+                                << shard,
+                                now;
+                    std::cout << create_index_user_last_name_index.toString() << std::endl;
+                    create_index_user_email_index
+                                << "create index if not exists user_email_index on user(email);"
+                                << shard,
+                                now;
+                    std::cout << create_index_user_email_index.toString() << std::endl;
+            }
         }
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
@@ -117,15 +121,17 @@ namespace models
         object->set("title", title);
         return object;
     }
-
+    
     std::optional<User> User::get_by_id(std::string &user_uuid)
     {
         try
         {
             Poco::Data::Session session = database::Database::get_instance().create_database_session();
+            long hash = get_hash(user_uuid);
+            std::string shard = database::Database::get_sharding_hint(hash);
             Poco::Data::Statement select(session);
             User output;
-            select << "select id, first_name, last_name, login, password, email, title from user where id=?",
+            select << "select id, first_name, last_name, login, password, email, title from user where id=?;" << shard,
                 into(output.user_uuid),
                 into(output.first_name),
                 into(output.last_name),
@@ -135,7 +141,7 @@ namespace models
                 into(output.title),
                 use(user_uuid),
                 range(0, 1);
-
+            
             select.execute();
             Poco::Data::RecordSet rs(select);
             if (rs.moveFirst()) return output;
@@ -150,77 +156,122 @@ namespace models
             std::cout << "Database statement exception:" << e.what() << std::endl;
             throw;
         }
+            
         return {};
     }
-    
+
 
     std::optional<User> User::get_by_login(std::string &login)
     {
-        try
+        Poco::Data::Session session = database::Database::get_instance().create_database_session();
+        for (const auto& shard : database::Database::get_all_sharding_hints())
         {
-            Poco::Data::Session session = database::Database::get_instance().create_database_session();
-            Poco::Data::Statement select(session);
-            User output;
-            select << "select id, first_name, last_name, login, password, email, title from user where login=?",
-                into(output.user_uuid),
-                into(output.first_name),
-                into(output.last_name),
-                into(output.login),
-                into(output.password),
-                into(output.email),
-                into(output.title),
-                use(login),
-                range(0, 1);
+            try
+            {
+                Poco::Data::Statement select(session);
+                User output;
+                select << "select id, first_name, last_name, login, password, email, title from user where login=?;" + shard,
+                    into(output.user_uuid),
+                    into(output.first_name),
+                    into(output.last_name),
+                    into(output.login),
+                    into(output.password),
+                    into(output.email),
+                    into(output.title),
+                    use(login),
+                    range(0, 1);
 
-            select.execute();
-            Poco::Data::RecordSet rs(select);
-            if (rs.moveFirst()) return output;
+                select.execute();
+                Poco::Data::RecordSet rs(select);
+                if (rs.moveFirst()) return output;
+            }
+            catch (Poco::Data::MySQL::ConnectionException &e)
+            {
+                std::cout << "Database connection exception:" << e.what() << std::endl;
+                throw;
+            }
+            catch (Poco::Data::MySQL::StatementException &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
         }
-        catch (Poco::Data::MySQL::ConnectionException &e)
+        return {};
+    }
+
+    std::optional<User> User::get_by_email(std::string &email)
+    {
+        Poco::Data::Session session = database::Database::get_instance().create_database_session();
+        for (const auto& shard : database::Database::get_all_sharding_hints())
         {
-            std::cout << "Database connection exception:" << e.what() << std::endl;
-            throw;
-        }
-        catch (Poco::Data::MySQL::StatementException &e)
-        {
-            std::cout << "Database statement exception:" << e.what() << std::endl;
-            throw;
+            try
+            {
+                Poco::Data::Statement select(session);
+                User output;
+                select << "select id, first_name, last_name, login, password, email, title from user where email=?;" + shard,
+                    into(output.user_uuid),
+                    into(output.first_name),
+                    into(output.last_name),
+                    into(output.login),
+                    into(output.password),
+                    into(output.email),
+                    into(output.title),
+                    use(email),
+                    range(0, 1);
+
+                select.execute();
+                Poco::Data::RecordSet rs(select);
+                if (rs.moveFirst()) return output;
+            }
+            catch (Poco::Data::MySQL::ConnectionException &e)
+            {
+                std::cout << "Database connection exception:" << e.what() << std::endl;
+                throw;
+            }
+            catch (Poco::Data::MySQL::StatementException &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
         }
         return {};
     }
 
     std::optional<User> User::auth_by_login(std::string &login, std::string &password)
     {
-        try
+        for (const auto& shard : database::Database::get_all_sharding_hints())
         {
-            Poco::Data::Session session = database::Database::get_instance().create_database_session();
-            Poco::Data::Statement select(session);
-            User output;
-            select << "select id, first_name, last_name, login, password, email, title from user where login=? and password=?",
-                into(output.user_uuid),
-                into(output.first_name),
-                into(output.last_name),
-                into(output.login),
-                into(output.password),
-                into(output.email),
-                into(output.title),
-                use(login),
-                use(password),
-                range(0, 1);
+            try
+            {
+                Poco::Data::Session session = database::Database::get_instance().create_database_session();
+                Poco::Data::Statement select(session);
+                User output;
+                select << "select id, first_name, last_name, login, password, email, title from user where login=? and password=?;"+ shard,
+                    into(output.user_uuid),
+                    into(output.first_name),
+                    into(output.last_name),
+                    into(output.login),
+                    into(output.password),
+                    into(output.email),
+                    into(output.title),
+                    use(login),
+                    use(password),
+                    range(0, 1);
 
-            select.execute();
-            Poco::Data::RecordSet rs(select);
-            if (rs.moveFirst()) return output;
-        }
-        catch (Poco::Data::MySQL::ConnectionException &e)
-        {
-            std::cout << "Database connection exception:" << e.what() << std::endl;
-            throw;
-        }
-        catch (Poco::Data::MySQL::StatementException &e)
-        {
-            std::cout << "Database statement exception:" << e.what() << std::endl;
-            throw;
+                select.execute();
+                Poco::Data::RecordSet rs(select);
+                if (rs.moveFirst()) return output;
+            }
+            catch (Poco::Data::MySQL::ConnectionException &e)
+            {
+                std::cout << "Database connection exception:" << e.what() << std::endl;
+                throw;
+            }
+            catch (Poco::Data::MySQL::StatementException &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
         }
         return {};
     }
@@ -228,155 +279,198 @@ namespace models
    
     std::optional<User> User::auth_by_email(std::string &email, std::string &password)
     {
-        try
+        for (const auto& shard : database::Database::get_all_sharding_hints())
         {
-            Poco::Data::Session session = database::Database::get_instance().create_database_session();
-            Poco::Data::Statement select(session);
-            User output;
-            select << "select id, first_name, last_name, login, password, email, title from user where email=? and password=?",
-                into(output.user_uuid),
-                into(output.first_name),
-                into(output.last_name),
-                into(output.login),
-                into(output.password),
-                into(output.email),
-                into(output.title),
-                use(email),
-                use(password),
-                range(0, 1);
-
-            select.execute();
-            Poco::Data::RecordSet rs(select);
-            if (rs.moveFirst()) return output;
-        }
-        catch (Poco::Data::MySQL::ConnectionException &e)
-        {
-            std::cout << "Database connection exception:" << e.what() << std::endl;
-            throw;
-        }
-        catch (Poco::Data::MySQL::StatementException &e)
-        {
-            std::cout << "Database statement exception:" << e.what() << std::endl;
-            throw;
-        }
-        return {};
-    }
-
-    std::optional<User> User::find_by_login(std::string &login)
-    {
-        try
-        {
-            Poco::Data::Session session = database::Database::get_instance().create_database_session();
-            Statement select(session);
-            User user;
-            login += "%";
-            select << "select id, first_name, last_name, login, password, email, title from user where login like ?",
-                    into(user.user_uuid),
-                    into(user.first_name),
-                    into(user.last_name),
-                    into(user.login),
-                    into(user.password),
-                    into(user.email),
-                    into(user.title),
-                    use(login),
-                    range(0, 1); //  iterate over result set one row at a time
-
-            select.execute();
-            Poco::Data::RecordSet rs(select);
-            if (rs.moveFirst()) return user;
-        }
-        catch (Poco::Data::MySQL::ConnectionException &e)
-        {
-            std::cout << "Database connection exception:" << e.what() << std::endl;
-            throw;
-        }
-        catch (Poco::Data::MySQL::StatementException &e)
-        {
-            std::cout << "Database statement exception:" << e.what() << std::endl;
-            throw;
-        }
-        return {};
-    }
-
-    std::optional<User> User::find_by_email(std::string &email)
-    {
-        try
-        {
-            Poco::Data::Session session = database::Database::get_instance().create_database_session();
-            Statement select(session);
-            User user;
-            select << "select id, first_name, last_name, login, password, email, title from user where email like ?",
-                    into(user.user_uuid),
-                    into(user.first_name),
-                    into(user.last_name),
-                    into(user.login),
-                    into(user.password),
-                    into(user.email),
-                    into(user.title),
+            try
+            {
+                Poco::Data::Session session = database::Database::get_instance().create_database_session();
+                Poco::Data::Statement select(session);
+                User output;
+                select << "select id, first_name, last_name, login, password, email, title from user where email=? and password=?;"+shard,
+                    into(output.user_uuid),
+                    into(output.first_name),
+                    into(output.last_name),
+                    into(output.login),
+                    into(output.password),
+                    into(output.email),
+                    into(output.title),
                     use(email),
-                    range(0, 1); //  iterate over result set one row at a time
+                    use(password),
+                    range(0, 1);
 
-            select.execute();
-            Poco::Data::RecordSet rs(select);
-            if (rs.moveFirst()) return user;
-        }
-        catch (Poco::Data::MySQL::ConnectionException &e)
-        {
-            std::cout << "Database connection exception:" << e.what() << std::endl;
-            throw;
-        }
-        catch (Poco::Data::MySQL::StatementException &e)
-        {
-            std::cout << "Database statement exception:" << e.what() << std::endl;
-            throw;
+                select.execute();
+                Poco::Data::RecordSet rs(select);
+                if (rs.moveFirst()) return output;
+            }
+            catch (Poco::Data::MySQL::ConnectionException &e)
+            {
+                std::cout << "Database connection exception:" << e.what() << std::endl;
+                throw;
+            }
+            catch (Poco::Data::MySQL::StatementException &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
         }
         return {};
+    }
+
+    std::vector<User> User::find_by_login(std::string &login)
+    {
+        std::vector<User> result;
+        login += "%";
+        for (const auto& shard : database::Database::get_all_sharding_hints())
+        {
+            try
+            {
+                Poco::Data::Session session = database::Database::get_instance().create_database_session();
+                Statement select(session);
+                User user;
+                select << "select id, first_name, last_name, login, password, email, title from user where login like ?;" + shard,
+                        use(login),
+                        now;
+                select.execute();
+                Poco::Data::RecordSet rs(select);
+                bool more = rs.moveFirst();
+                while (more)
+                {
+                    User user;
+                    user.user_uuid = rs[0].convert<std::string>();
+                    user.first_name = rs[1].convert<std::string>();
+                    user.last_name = rs[2].convert<std::string>();
+                    user.login = rs[3].convert<std::string>();
+                    user.password = rs[4].convert<std::string>();
+                    user.email = rs[5].convert<std::string>();
+                    user.title = rs[6].convert<std::string>();
+                    result.push_back(user);
+                    more = rs.moveNext();
+                }
+                
+            }
+            catch (Poco::Data::MySQL::ConnectionException &e)
+            {
+                std::cout << "Database connection exception:" << e.what() << std::endl;
+                throw;
+            }
+            catch (Poco::Data::MySQL::StatementException &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
+            catch(std::exception &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
+        }
+        if (result.empty())
+        {
+            return {};
+        }
+        return result;
+    }
+
+    std::vector<User> User::find_by_email(std::string &email)
+    {
+        std::vector<User> result;
+        email += "%";
+        for (const auto& shard : database::Database::get_all_sharding_hints())
+        {
+            try
+            {
+                Poco::Data::Session session = database::Database::get_instance().create_database_session();
+                Statement select(session);
+                User user;
+
+                select << "select id, first_name, last_name, login, password, email, title from user where email like ?;" + shard,
+                        use(email),
+                        now;
+
+                select.execute();
+                Poco::Data::RecordSet rs(select);
+                bool more = rs.moveFirst();
+                while (more)
+                {
+                    User user;
+                    user.user_uuid = rs[0].convert<std::string>();
+                    user.first_name = rs[1].convert<std::string>();
+                    user.last_name = rs[2].convert<std::string>();
+                    user.login = rs[3].convert<std::string>();
+                    user.password = rs[4].convert<std::string>();
+                    user.email = rs[5].convert<std::string>();
+                    user.title = rs[6].convert<std::string>();
+                    result.push_back(user);
+                    more = rs.moveNext();
+                }
+            }
+            catch (Poco::Data::MySQL::ConnectionException &e)
+            {
+                std::cout << "Database connection exception:" << e.what() << std::endl;
+                throw;
+            }
+            catch (Poco::Data::MySQL::StatementException &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
+        }
+        if (result.empty())
+        {
+            return {};
+        }
+        return result;
     }
 
     std::vector<User> User::find_by_first_last_name(std::string &first_name, std::string &last_name)
     {
-        try
+        std::vector<User> result;
+        first_name += "%";
+        last_name += "%";
+        for (const auto& shard : database::Database::get_all_sharding_hints())
         {
-            std::vector<User> result;
-            first_name += "%";
-            last_name += "%";
-
-            Poco::Data::Session session = database::Database::get_instance().create_database_session();
-            Statement select(session);
-            select << "select id, first_name, last_name, login, password, email, title from user where first_name like ? and last_name like ?",
-                    use(first_name),
-                    use(last_name),
-                    now;
-
-            select.execute();
-            Poco::Data::RecordSet rs(select);
-            bool more = true;
-            while (more)
+            try
             {
-                User user;
-                user.user_uuid = rs[0].convert<std::string>();
-                user.first_name = rs[1].convert<std::string>();
-                user.last_name = rs[2].convert<std::string>();
-                user.login = rs[3].convert<std::string>();
-                user.password = rs[4].convert<std::string>();
-                user.email = rs[5].convert<std::string>();
-                user.title = rs[6].convert<std::string>();
-                result.push_back(user);
-                more = rs.moveNext();
+                Poco::Data::Session session = database::Database::get_instance().create_database_session();
+                Statement select(session);
+                select << "select id, first_name, last_name, login, password, email, title from user where first_name like ? and last_name like ?;" + shard,
+                        use(first_name),
+                        use(last_name),
+                        now;
+
+                select.execute();
+                Poco::Data::RecordSet rs(select);
+                bool more =rs.moveFirst();
+                while (more)
+                {
+                    User user;
+                    user.user_uuid = rs[0].convert<std::string>();
+                    user.first_name = rs[1].convert<std::string>();
+                    user.last_name = rs[2].convert<std::string>();
+                    user.login = rs[3].convert<std::string>();
+                    user.password = rs[4].convert<std::string>();
+                    user.email = rs[5].convert<std::string>();
+                    user.title = rs[6].convert<std::string>();
+                    result.push_back(user);
+                    more = rs.moveNext();
+                }
             }
-            return result;
+            catch (Poco::Data::MySQL::ConnectionException &e)
+            {
+                std::cout << "Database connection exception:" << e.what() << std::endl;
+                throw;
+            }
+            catch (Poco::Data::MySQL::StatementException &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
         }
-        catch (Poco::Data::MySQL::ConnectionException &e)
+        if (result.empty())
         {
-            std::cout << "Database connection exception:" << e.what() << std::endl;
-            throw;
+            return {};
         }
-        catch (Poco::Data::MySQL::StatementException &e)
-        {
-            std::cout << "Database statement exception:" << e.what() << std::endl;
-            throw;
-        }
-        return {};
+        return result;
     }
 
     void User::save_to_db()
@@ -384,8 +478,15 @@ namespace models
         try
         {
             Poco::Data::Session session = database::Database::get_instance().create_database_session();
+            if (user_uuid.empty())
+            {
+                std::string uuid = boost::uuids::to_string(boost::uuids::random_generator()());
+                user_uuid = uuid;
+            }
+            std::string shard = database::Database::get_sharding_hint(get_hash(user_uuid));
             Poco::Data::Statement insert(session);
-            insert << "insert into user (first_name, last_name, login, password, email, title) values(?, ?, ?, ?, ?, ?);",
+            insert << "insert into user (id,first_name, last_name, login, password, email, title) values(?, ?, ?, ?, ?, ?, ?);"+shard,
+                use(user_uuid),
                 use(first_name),
                 use(last_name),
                 use(login),
@@ -395,7 +496,7 @@ namespace models
                 range(0,1);
             insert.execute();
             Poco::Data::Statement select(session);
-            select << "SELECT @last_user_uuid;",
+            select << "SELECT @last_user_uuid;"+shard,
                 into(user_uuid),
                 range(0, 1); 
 
@@ -480,5 +581,9 @@ namespace models
     void User::set_title(std::string t_l)
     {
         title = t_l;
+    }
+    void User::set_user_uuid(std::string id)
+    {
+        user_uuid = id;
     }
 }

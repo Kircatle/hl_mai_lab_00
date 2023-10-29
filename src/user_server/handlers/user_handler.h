@@ -56,13 +56,21 @@ class UserHandler : public HTTPRequestHandler
 {
   private:
 
-    bool check_login(const std::string &login, std::string &reason)
+    bool check_login(std::string &login, std::string &reason)
     {
+
         if (isdigit(login[0]))
         {
             reason = "Login first sign can't be digit";
             return false;
         }
+        std::optional<models::User> user = models::User::get_by_login(login);
+        if (user)
+        {
+            reason = "A user with this login already exists";
+            return false;
+        }
+
         return true;
     };
 
@@ -89,8 +97,9 @@ class UserHandler : public HTTPRequestHandler
         return true;
     };
 
-    bool check_email(const std::string &email, std::string &reason)
-    {
+    bool check_email(std::string &email, std::string &reason)
+    {   
+        reason = "";
         if (email.find('@') == std::string::npos)
         {
             reason = "Email must contain @";
@@ -106,6 +115,12 @@ class UserHandler : public HTTPRequestHandler
         if (email.find('\t') != std::string::npos)
         {
             reason = "EMail can't contain spaces";
+            return false;
+        }
+        std::optional<models::User> user = models::User::get_by_email(email);
+        if (user)
+        {
+            reason = "A user with this email already exists";
             return false;
         }
 
@@ -171,6 +186,7 @@ class UserHandler : public HTTPRequestHandler
                 else if (path == "/user" && request.getMethod() == HTTPRequest::HTTP_POST)
                 {
                     models::User user;
+                    Poco::Nullable<std::string> user_id;
                     std::string first_name = "";
                     std::string last_name = "";
                     std::string login = "";
@@ -185,6 +201,7 @@ class UserHandler : public HTTPRequestHandler
                         Poco::JSON::Parser parser;
                         Poco::Dynamic::Var result = parser.parse(requestBody);
                         Poco::JSON::Object::Ptr object = result.extract<Poco::JSON::Object::Ptr>();
+                        user_id = object->getNullableValue<std::string>("id");
                         first_name = object->getValue<std::string>("first_name");
                         last_name = object->getValue<std::string>("last_name");
                         login = object->getValue<std::string>("login");
@@ -222,6 +239,7 @@ class UserHandler : public HTTPRequestHandler
                     }
                     if (check_result)
                     {
+                        if (!user_id.isNull()) user.set_user_uuid(user_id.value());
                         user.set_first_name(first_name);
                         user.set_last_name(last_name);
                         user.set_login(login);
@@ -303,15 +321,12 @@ class UserHandler : public HTTPRequestHandler
                     std::string login = form.get("login", "");
                     std::string first_name = form.get("first_name", "");
                     std::string last_name = form.get("last_name", "");
-
                     std::vector<models::User> result;
                     if (!login.empty())
                     {
                         try
                         {
-                           std::optional<models::User> user = models::User::find_by_login(login);
-                           std::cout << "\n123\n";
-                           if (user.has_value()) result.push_back(user.value());
+                           result = models::User::find_by_login(login);
                         } catch (std::exception &e) {
                             std::cout << "Error find user" << e.what() << std::endl;
                             response.setStatus(HTTPResponse::HTTP_BAD_REQUEST);
@@ -322,8 +337,7 @@ class UserHandler : public HTTPRequestHandler
                     {
                         try
                         {
-                            std::optional<models::User> user = models::User::find_by_email(email);
-                            if (user.has_value()) result.push_back(user.value());
+                            result = models::User::find_by_email(email);
                         } catch (std::exception &e) {
                             std::cout << "Error find user" << e.what() << std::endl;
                             response.setStatus(HTTPResponse::HTTP_BAD_REQUEST);
