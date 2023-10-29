@@ -4,7 +4,7 @@ services:
 
   db-delivery-1:
       build:
-        context: docker/database
+        context: database
         dockerfile: Dockerfile
       container_name: db-delivery-1
       restart: unless-stopped
@@ -31,7 +31,7 @@ services:
 
   db-delivery-2:
     build:
-      context: docker/database
+      context: database
       dockerfile: Dockerfile
     container_name: db-delivery-2
     restart: unless-stopped
@@ -58,7 +58,7 @@ services:
 
   db-delivery-3:
     build:
-      context: docker/database
+      context: database
       dockerfile: Dockerfile
     container_name: db-delivery-3
     restart: unless-stopped
@@ -86,7 +86,7 @@ services:
 
   proxysql:
     build:
-      context: docker/proxysql
+      context: proxysql
       dockerfile: Dockerfile
     container_name: db-delivery-proxy
     healthcheck:
@@ -111,7 +111,7 @@ services:
 
   user_server:
     build:
-      context: docker/user_server
+      context: user_server
       dockerfile: Dockerfile
     container_name: user_server
     environment:
@@ -132,7 +132,7 @@ services:
     
   delivery_server:
     build:
-      context: docker/delivery_server
+      context: delivery_server
       dockerfile: Dockerfile
     container_name: delivery_server
     environment:
@@ -165,8 +165,8 @@ networks:
 
 configs:
   mariadb_conf1:
-    file: ./docker/database/my.cnf
+    file: ./database/my.cnf
   mariadb_conf2:
-    file: ./docker/database/config/mysqld.cnf
+    file: ./database/config/mysqld.cnf
   proxysql_conf:
-    file: ./docker/proxysql/proxysql.cnf
+    file: ./proxysql/proxysql.cnf

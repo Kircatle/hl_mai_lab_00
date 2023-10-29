@@ -65,8 +65,8 @@ class PackageHandler : public HTTPRequestHandler
         Config &config = Config::get_instanse();
         try
         {
-            
             std::string url = "http://"+config.get_url_user_service()+"/user?id="+user_uuid;
+            std::cout << "\nSend request to "+url+"\n";
             Poco::URI uri(url);
             Poco::Net::HTTPClientSession s(uri.getHost(), uri.getPort());
             Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, uri.toString());
@@ -154,6 +154,7 @@ class PackageHandler : public HTTPRequestHandler
         PackageHandler(const std::string &format) : _format(format) {}
         void handleRequest(HTTPServerRequest &request, HTTPServerResponse &response)
         {
+            Config &config = Config::get_instanse();
             response.setChunkedTransferEncoding(true);
             response.setContentType("application/json");
             Poco::URI uri = Poco::URI(request.getURI());
@@ -176,7 +177,8 @@ class PackageHandler : public HTTPRequestHandler
                 std::cout << "password:" << password << std::endl;
                 std::string host = "localhost";
                 std::string url;
-                url = "http://" + host + ":5055/user/auth";
+                url = "http://" + config.get_url_user_service() + "/user/auth";
+                std::cout << "\nSend request to "+url+"\n";
                 if (!auth(url,login,password))
                 {
                     send_unauthorized_exception("unath", response);

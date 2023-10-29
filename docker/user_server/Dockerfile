@@ -8,5 +8,6 @@ RUN git clone https://github.com/mfontanini/cppkafka && cd cppkafka && mkdir bui
 RUN git clone https://github.com/tdv/redis-cpp.git && cd redis-cpp && mkdir build && cd build && cmake .. && make && make install && cd .. && cd ..
 RUN git clone https://github.com/Kircatle/hl_mai_lab_00.git
 RUN sudo ldconfig
+ARG CACHEBUST=1
 RUN cd hl_mai_lab_00/src && mkdir build && cd build && cmake .. && make
 ENTRYPOINT [ "hl_mai_lab_00/src/build/user_service" ]
