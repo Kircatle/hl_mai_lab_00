@@ -20,8 +20,8 @@ System_Ext(web_site, "Клиентский веб-сайт", "HTML, CSS, JavaScr
 System_Boundary(conference_site, "Сайт доставок") {
    'Container(web_site, "Клиентский веб-сайт", ")
    Container(client_service, "Сервис авторизации", "C++", "Сервис управления пользователями", $tags = "microService")    
-   Container(package_service, "Сервис посылок", "C++", "Сервис управления посылками", $tags = "microService") 
-   Container(delivery_service, "Сервис доставок", "C++", "Сервис управления доставками", $tags = "microService")   
+  '  Container(package_service, "Сервис посылок", "C++", "Сервис управления посылками", $tags = "microService") 
+   Container(delivery_service, "Сервис посылок и доставок", "C++", "Сервис управления доставками", $tags = "microService")   
    ContainerDb(db, "База данных", "Postgresql", "Хранение данных о посылках, доставках и пользователях", $tags = "storage")
    
 }
@@ -32,11 +32,11 @@ Rel(user, web_site, "Регистрация, создание посылок и 
 
 Rel(web_site, client_service, "Работа с пользователями", "localhost/person")
 Rel(client_service, db, "INSERT/SELECT/UPDATE", "SQL")
+Rel(delivery_service, client_service, "Авторизация", "HTTP")
+' Rel(web_site, package_service, "Работа с посылками", "localhost/pres")
+' Rel(package_service, db, "INSERT/SELECT/UPDATE", "SQL")
 
-Rel(web_site, package_service, "Работа с посылками", "localhost/pres")
-Rel(package_service, db, "INSERT/SELECT/UPDATE", "SQL")
-
-Rel(web_site,delivery_service, "Работа с доставками", "localhost/conf")
+Rel(web_site,delivery_service, "Работа с посылками и доставками", "localhost/conf")
 Rel(delivery_service, db, "INSERT/SELECT/UPDATE", "SQL")
 
 @enduml
@@ -55,7 +55,7 @@ Rel(delivery_service, db, "INSERT/SELECT/UPDATE", "SQL")
      - входные параметры: маска фамилии, маска имени
      - выходные параметры: login, имя, фамилия, email, обращение (г-н/г-жа), идентификатор пользователя
 
-### Сервис посылок
+### Сервис посылок и доставок
 **API**:
 - Создание посылки
   - Входные параметры: название посылки, вес, габариты, идентификатор пользователя, создавшего посылку
@@ -63,9 +63,6 @@ Rel(delivery_service, db, "INSERT/SELECT/UPDATE", "SQL")
 - Получение посылок пользователя
   - Входные параметры: идентификатор пользователя
   - Выходные параметры: список посылок пользователя
-
-### Сервис доставок
-**API**:
 - Создание доставки от пользователя к пользователю
   - Входные параметры: идентификатор отправителя, получателя и посылки, дата отправления
   - Выходные параметры: идентификатор доставки

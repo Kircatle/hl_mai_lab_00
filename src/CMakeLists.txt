@@ -70,31 +70,3 @@ target_link_libraries(${delivery_service} PRIVATE
                              "PocoDataMySQL"
                              "mysqlclient"
                              ZLIB::ZLIB)
-
-# target_include_directories(create_mock_data PRIVATE "${CMAKE_BINARY_DIR}")
-# target_compile_options(create_mock_data PRIVATE -Wall -Wextra -pedantic -Werror )
-# set_target_properties(create_mock_data PROPERTIES LINKER_LANGUAGE CXX)
-# set_target_properties(create_mock_data PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
-        
-# target_link_libraries(create_mock_data PRIVATE
-#         ${CMAKE_THREAD_LIBS_INIT}
-#         ${Poco_LIBRARIES}
-#         "PocoData"
-#         "PocoDataMySQL"
-#         "mysqlclient"
-#         ZLIB::ZLIB)
-
-# target_include_directories(${writer} PRIVATE "${CMAKE_BINARY_DIR}")
-# target_compile_options(${writer} PRIVATE -Wall -Wextra -pedantic -Werror )
-# set_target_properties(${writer} PROPERTIES LINKER_LANGUAGE CXX)
-# set_target_properties(${writer} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
-
-# target_link_libraries(${writer} PRIVATE
-#         ${CMAKE_THREAD_LIBS_INIT}
-#         ${Poco_LIBRARIES}
-#         "PocoData"
-#         "PocoDataMySQL"
-#         "mysqlclient"
-#         ZLIB::ZLIB
-#         "rdkafka++"
-#         CppKafka::cppkafka)
