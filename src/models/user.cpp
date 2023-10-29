@@ -128,8 +128,10 @@ namespace models
         {
             Poco::Data::Session session = database::Database::get_instance().create_database_session();
             long hash = get_hash(user_uuid);
+            
             std::string shard = database::Database::get_sharding_hint(hash);
             Poco::Data::Statement select(session);
+            std::cout << hash << shard << user_uuid;
             User output;
             select << "select id, first_name, last_name, login, password, email, title from user where id=?;" << shard,
                 into(output.user_uuid),
@@ -465,6 +467,11 @@ namespace models
                 std::cout << "Database statement exception:" << e.what() << std::endl;
                 throw;
             }
+            catch(std::exception &e)
+            {
+                std::cout << "Database statement exception:" << e.what() << std::endl;
+                throw;
+            }
         }
         if (result.empty())
         {
@@ -505,6 +512,7 @@ namespace models
                 select.execute();
             }
             std::cout << "Inserted new user with id = " << user_uuid << std::endl;
+            return;
         }
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
@@ -512,6 +520,11 @@ namespace models
             throw;
         }
         catch (Poco::Data::MySQL::StatementException &e)
+        {
+            std::cout << "Database statement exception:" << e.what() << std::endl;
+            throw;
+        }
+        catch(std::exception &e)
         {
             std::cout << "Database statement exception:" << e.what() << std::endl;
             throw;
