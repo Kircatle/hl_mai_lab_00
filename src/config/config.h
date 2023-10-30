@@ -18,6 +18,7 @@ class Config
         std::string _database;
         std::string _url_user_service;
         std::string _application_port;
+        std::string _cache_server;
 
     public:
         static Config &get_instanse();
@@ -29,6 +30,7 @@ class Config
         const std::string &get_database_path();
         const std::string &get_url_user_service();
         const std::string &get_application_port();
+        const std::string &get_cache_server();
 };
 
 #endif

@@ -31,10 +31,10 @@ SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(${service} main_user_server.cpp
-        # cache/cache.cpp
         config/config.cpp
         models/database.cpp
-        models/user.cpp)
+        models/user.cpp
+        models/cache.cpp)
 
 target_include_directories(${service} PRIVATE "${CMAKE_BINARY_DIR}")
 target_compile_options(${service} PRIVATE -Wall -Wextra -pedantic -Werror )
@@ -53,7 +53,6 @@ target_link_libraries(${service} PRIVATE
 
 
 add_executable(${delivery_service} main_delivery_server.cpp
-        # cache/cache.cpp
         config/config.cpp
         models/database.cpp
         models/package.cpp

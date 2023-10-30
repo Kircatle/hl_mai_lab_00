@@ -13,3 +13,4 @@ export DATABASE_LOGIN=delivery
 export DATABASE_PASSWORD=delivery
 export DATABASE_NAME=delivery
 export URL_USER_SERVICE=localhost:5055
+export CACHE_ADRESS=localhost:6379

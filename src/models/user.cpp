@@ -2,6 +2,7 @@
 #include "database.h"
 #include "../config/config.h"
 #include "../helpers/get_hash.h"
+#include "cache.h"
 #include <Poco/Data/MySQL/Connector.h>
 #include <Poco/Data/MySQL/MySQLException.h>
 #include <Poco/Data/SessionFactory.h>
@@ -91,7 +92,7 @@ namespace models
         }
     }
 
-    User User::from_json(const std::string &json)
+    User User::from_json(std::string &json)
     {
         User user;
         Poco::JSON::Parser parser;
@@ -106,6 +107,23 @@ namespace models
         user.email = object->getValue<std::string>("email");
         user.title = object->getValue<std::string>("title");
         return user;
+    }
+
+    std::optional<User> User::from_cache(const std::string &id)
+    {
+        try
+        {
+            std::string result;
+            database::Cache cache = database::Cache::get_instance();
+
+            if (cache.get(id, result)) return User::from_json(result);
+        }
+        catch (std::exception& e)
+        {
+            std::cout << e.what() << std::endl;
+        }
+
+        return {};
     }
 
     Poco::JSON::Object::Ptr User::to_json() const
@@ -530,7 +548,14 @@ namespace models
             throw;
         }
     }
-
+    
+    void User::save_to_cache(std::string &key)
+    {
+        std::stringstream stream;
+        Poco::JSON::Stringifier::stringify(to_json(), stream);
+        std::string json = stream.str();
+        database::Cache::get_instance().put(key, json);
+    }
     std::string User::get_user_uuid() const
     {
         return user_uuid;

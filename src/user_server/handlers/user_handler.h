@@ -148,35 +148,99 @@ class UserHandler : public HTTPRequestHandler
                 {
                     if (form.has("id"))
                     {
+                        bool use_cache = request.get("Cache-Control", "no-cache") == "cache";
                         std::string user_uuid = form.get("id").c_str();
-                        std::optional<models::User> result = models::User::get_by_id(user_uuid);
-                        if (result)
+                        if (!use_cache)
                         {
-                            response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
-                            std::ostream &ostr = response.send();
-                            Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                            std::optional<models::User> result = models::User::get_by_id(user_uuid);
+                            if (result)
+                            {
+                                response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                                std::ostream &ostr = response.send();
+                                Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                            }
+                            else
+                            {
+                                send_not_found_exception("User with id " + user_uuid + " was not found", "/user", response);
+                            } 
+                            return;
                         }
                         else
                         {
-                            send_not_found_exception("User with id " + user_uuid + " was not found", "/user", response);
+                           std::optional<models::User> result = models::User::from_cache(user_uuid);
+                           if (result)
+                           {
+                                response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                                std::ostream &ostr = response.send();
+                                Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                                return;
+                           }
+                           else
+                           {
+                                std::optional<models::User> result = models::User::get_by_id(user_uuid);
+                                if (result)
+                                {
+                                    result->save_to_cache(user_uuid);
+                                    response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                                    std::ostream &ostr = response.send();
+                                    Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                                }
+                                else
+                                {
+                                    send_not_found_exception("User with id " + user_uuid + " was not found", "/user", response);
+                                } 
+                                return;
+                           }
                         } 
-                        return;
+                        
                     }
                     else if (form.has("login"))
                     {
+                        bool use_cache = request.get("Cache-Control", "no-cache") == "cache";
                         std::string login = form.get("login").c_str();
-                        std::optional<models::User> result = models::User::get_by_login(login);
-                        if (result)
+                       
+                        if (!use_cache)
                         {
-                            response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
-                            std::ostream &ostr = response.send();
-                            Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                            std::optional<models::User> result = models::User::get_by_login(login);
+                            if (result)
+                            {
+                                response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                                std::ostream &ostr = response.send();
+                                Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                            }
+                            else
+                            {
+                                send_not_found_exception("User with login " + login + " was not found", "/user", response);
+                            } 
+                            return;
                         }
                         else
                         {
-                            send_not_found_exception("User with login " + login + " was not found", "/user", response);
-                        } 
-                        return;
+                            std::optional<models::User> result = models::User::from_cache(login);
+                            if (result)
+                            {
+                                response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                                std::ostream &ostr = response.send();
+                                Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                            }
+                            else
+                            {
+                                std::optional<models::User> result = models::User::get_by_login(login);
+                                if (result)
+                                {
+                                    result->save_to_cache(login);
+                                    response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                                    std::ostream &ostr = response.send();
+                                    Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                                }
+                                else
+                                {
+                                    send_not_found_exception("User with login " + login + " was not found", "/user", response);
+                                } 
+                                return;
+                            } 
+                            return;
+                        }
                     }
                 }
                 else if (path == "/user" && request.getMethod() == HTTPRequest::HTTP_GET)

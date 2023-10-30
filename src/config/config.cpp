@@ -25,6 +25,7 @@ Config::Config()
     {
         _application_port = std::getenv("APP_PORT");
     }
+    _cache_server = std::getenv("CACHE_ADRESS");
 }
 
 Config &Config::get_instanse()
@@ -66,4 +67,8 @@ const std::string &Config::get_url_user_service()
 const std::string &Config::get_application_port()
 {
     return _application_port;
+}
+const std::string &Config::get_cache_server()
+{
+    return _cache_server;
 }
