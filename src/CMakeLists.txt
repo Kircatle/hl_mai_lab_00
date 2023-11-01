@@ -4,6 +4,7 @@ project(hl_server C CXX)
 
 SET (service "user_service")
 set (delivery_service "delivery_service")
+set (user_writer_service "user_writer_service")
 set (STD_CXX "c++17")
 set (REDISCPP_FLAGS "-DREDISCPP_HEADER_ONLY=ON")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -std=${STD_CXX} ${REDISCPP_FLAGS}")
@@ -69,3 +70,24 @@ target_link_libraries(${delivery_service} PRIVATE
                              "PocoDataMySQL"
                              "mysqlclient"
                              ZLIB::ZLIB)
+
+
+add_executable(${user_writer_service} main_user_writer.cpp 
+                                        config/config.cpp
+                                        models/database.cpp
+                                        models/user.cpp
+                                        models/cache.cpp)
+
+target_include_directories(${user_writer_service} PRIVATE "${CMAKE_BINARY_DIR}")
+target_compile_options(${user_writer_service} PRIVATE -Wall -Wextra -pedantic -Werror )
+set_target_properties(${user_writer_service} PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(${user_writer_service} PRIVATE 
+                         ${CMAKE_THREAD_LIBS_INIT} 
+                         ${Poco_LIBRARIES}
+                         "PocoData"
+                         "PocoDataMySQL"
+                         "mysqlclient"
+                         "rdkafka++"
+                         CppKafka::cppkafka
+                         ZLIB::ZLIB)
+                                        

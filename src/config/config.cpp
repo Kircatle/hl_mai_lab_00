@@ -25,7 +25,38 @@ Config::Config()
     {
         _application_port = std::getenv("APP_PORT");
     }
-    _cache_server = std::getenv("CACHE_ADRESS");
+    if (std::getenv("CACHE_ADRESS") == NULL)
+    {
+        _cache_server = "";
+    }
+    else
+    {
+        _cache_server = std::getenv("CACHE_ADRESS");
+    }
+    if (std::getenv("QUEUE_HOST")==NULL)
+    {
+        _queue_host = "";
+    }
+    else
+    {
+        _queue_host = std::getenv("QUEUE_HOST");
+    }
+    if (std::getenv("QUEUE_TOPIC")==NULL)
+    {
+        _queue_topic="";
+    }
+    else
+    {
+        _queue_topic = std::getenv("QUEUE_TOPIC");
+    }
+    if (std::getenv("QUEUE_GROUP_ID") ==NULL)
+    {
+        _queue_group_id="";
+    }
+    else
+    {
+        _queue_group_id = std::getenv("QUEUE_GROUP_ID");
+    }
 }
 
 Config &Config::get_instanse()
@@ -71,4 +102,16 @@ const std::string &Config::get_application_port()
 const std::string &Config::get_cache_server()
 {
     return _cache_server;
+}
+
+const std::string &Config::get_queue_group_id() {
+    return _queue_group_id;
+}
+
+const std::string &Config::get_queue_host() {
+    return _queue_host;
+}
+
+const std::string &Config::get_queue_topic() {
+    return _queue_topic;
 }

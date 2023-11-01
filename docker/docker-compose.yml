@@ -94,13 +94,41 @@ services:
     restart: always
     container_name: delivery-redis-cache
     ports:
-      - '6379:6379'
+      - $REDIS_EXPOSE_PORT:$REDIS_PORT
     command: redis-server --save 20 1 --loglevel warning
     networks:
       - delivery-network
     volumes:
       - delivery-cache:/data
 
+  zookeeper:
+    image: zookeeper
+    container_name: zookeeper
+    environment:
+        ZOOKEEPER_CLIENT_PORT: $ZOOKEEPER_CLIENT_PORT
+        ZOOKEEPER_TICK_TIME: $ZOOKEEPER_TICK_TIME
+        ZOOKEEPER_INIT_LIMIT: $ZOOKEEPER_INIT_LIMIT
+    networks:
+      - delivery-network
+
+  kafka-node-1:
+    image: wurstmeister/kafka
+    container_name: kafka-node-1
+    depends_on:
+      - zookeeper
+    ports:
+      - $KAFKA_ZOOKEEPER_EXPOSE_PORT:$KAFKA_ZOOKEEPER_PORT
+      - $ADVERTISED_EXPOSE_PORT:$ADVERTISED_PORT
+    networks:
+      - delivery-network
+    environment:
+        KAFKA_BROKER_ID: $KAFKA_BROKER_ID
+        KAFKA_ZOOKEEPER_CONNECT: $KAFKA_ZOOKEEPER_CONNECT
+        KAFKA_ADVERTISED_HOST_NAME: $KAFKA_ADVERTISED_HOST_NAME
+        ADVERTISED_PORT: $ADVERTISED_PORT
+        ADVERTISED_HOST_NAME: $ADVERTISED_HOST_NAME
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: $KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+        KAFKA_CREATE_TOPICS: $KAFKA_CREATE_TOPICS
 
   # user_server:
   #   build:

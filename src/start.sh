@@ -14,3 +14,6 @@ export DATABASE_PASSWORD=delivery
 export DATABASE_NAME=delivery
 export URL_USER_SERVICE=localhost:5055
 export CACHE_ADRESS=localhost:6379
+export QUEUE_HOST=127.0.0.1:9092
+export QUEUE_TOPIC=event_server
+export QUEUE_GROUP_ID=0

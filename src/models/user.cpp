@@ -13,7 +13,7 @@
 #include <sstream>
 #include <exception>
 #include <future>
-
+#include <cppkafka/cppkafka.h>
 
 #include <boost/uuid/uuid.hpp>            // uuid class
 #include <boost/uuid/uuid_generators.hpp> // generators
@@ -548,7 +548,41 @@ namespace models
             throw;
         }
     }
-    
+    void User::send_to_queue() {
+        Config &config = Config::get_instanse();
+        static cppkafka::Configuration config_kafka = {
+            {"metadata.broker.list",config.get_queue_host()},
+            {"acks", "all"}
+        };
+
+        static cppkafka::Producer producer(config_kafka);
+        static std::mutex mtx;
+        static int message_key{0};
+        using Hdr = cppkafka::MessageBuilder::HeaderType;
+
+        std::lock_guard<std::mutex> lock(mtx);
+        std::stringstream ss;
+        Poco::JSON::Stringifier::stringify(to_json(), ss);
+        std::string message = ss.str();
+        std::cout << message;
+        bool not_sent = true;
+
+        cppkafka::MessageBuilder builder(config.get_queue_topic());
+        std::string mk = std::to_string(++message_key);
+        builder.key(mk);                                       // set some key
+        builder.header(Hdr{"producer_type", "author writer"}); // set some custom header
+        builder.payload(message);                              // set message
+
+        while (not_sent) {
+            try {
+                producer.produce(builder);
+                not_sent = false;
+            }
+                catch (...) {
+            }
+        }
+    }
+
     void User::save_to_cache(std::string &key)
     {
         std::stringstream stream;

@@ -19,6 +19,9 @@ class Config
         std::string _url_user_service;
         std::string _application_port;
         std::string _cache_server;
+        std::string _queue_host;
+        std::string _queue_topic;
+        std::string _queue_group_id;
 
     public:
         static Config &get_instanse();
@@ -31,6 +34,9 @@ class Config
         const std::string &get_url_user_service();
         const std::string &get_application_port();
         const std::string &get_cache_server();
+        const std::string& get_queue_group_id();
+        const std::string& get_queue_host();
+        const std::string& get_queue_topic();
 };
 
 #endif

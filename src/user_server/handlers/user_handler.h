@@ -51,7 +51,7 @@ using Poco::Util::ServerApplication;
 #include "../../models/user.h"
 #include "../../helpers/send_not_found_exception.h"
 #include "../../helpers/identity_helper.h"
-
+#include "../../helpers/send_message.h"
 class UserHandler : public HTTPRequestHandler
 {
   private:
@@ -311,13 +311,9 @@ class UserHandler : public HTTPRequestHandler
                         user.set_email(email);
                         if (!title.isNull()) user.set_title(title.value());
 
-                        user.save_to_db();
-                        std::string user_uuid = user.get_user_uuid();
-                        std::cout << user_uuid;
-                        std::optional<models::User> result = models::User::get_by_id(user_uuid);
-                        response.setStatus(Poco::Net::HTTPResponse::HTTPStatus::HTTP_OK);
-                        std::ostream &ostr = response.send();
-                        Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                        user.send_to_queue();
+                        std::string message = "sended to queue!";
+                        send_message(message, response);
                         return;
                     }
                     else

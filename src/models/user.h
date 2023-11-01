@@ -51,6 +51,7 @@ namespace models
             void set_last_name(std::string pswrd);
             void set_email(std::string mail);
             void set_title(std::string p_n);
+            void send_to_queue();
     };
 }
 
