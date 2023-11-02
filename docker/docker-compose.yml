@@ -130,47 +130,73 @@ services:
         KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: $KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
         KAFKA_CREATE_TOPICS: $KAFKA_CREATE_TOPICS
 
-  # user_server:
-  #   build:
-  #     context: user_server
-  #     dockerfile: Dockerfile
-  #   container_name: user_server
-  #   environment:
-  #     - DATABASE_HOST=$USER_APP_DATABASE_HOST
-  #     - DATABASE_PORT=$USER_APP_DATABASE_PORT
-  #     - DATABASE_LOGIN=$USER_APP_DATABASE_LOGIN
-  #     - DATABASE_PASSWORD=$USER_APP_DATABASE_PASSWORD
-  #     - DATABASE_NAME=$USER_APP_DATABASE_NAME
-  #     - APP_PORT=$USER_APP_PORT
-  #   ports:
-  #     - $USER_APP_EXTERNAL_PORT:$USER_APP_PORT
-  #   networks:
-  #     - delivery-network
-  #   depends_on:
-  #     proxysql:
-  #       condition: service_healthy
+  user_server:
+    build:
+      context: user_server
+      dockerfile: Dockerfile
+    container_name: user_server
+    environment:
+      - DATABASE_HOST=$USER_APP_DATABASE_HOST
+      - DATABASE_PORT=$USER_APP_DATABASE_PORT
+      - DATABASE_LOGIN=$USER_APP_DATABASE_LOGIN
+      - DATABASE_PASSWORD=$USER_APP_DATABASE_PASSWORD
+      - DATABASE_NAME=$USER_APP_DATABASE_NAME
+      - APP_PORT=$USER_APP_PORT
+      - CACHE_ADRESS=$USER_APP_CACHE_ADRESS
+      - QUEUE_HOST=$USER_APP_QUEUE_HOST
+      - QUEUE_TOPIC=$USER_APP_QUEUE_TOPIC
+      - QUEUE_GROUP_ID=$USER_APP_QUEUE_GROUP_ID
 
+    ports:
+      - $USER_APP_EXTERNAL_PORT:$USER_APP_PORT
+    networks:
+      - delivery-network
+    depends_on:
+      proxysql:
+        condition: service_healthy
     
-  # delivery_server:
-  #   build:
-  #     context: delivery_server
-  #     dockerfile: Dockerfile
-  #   container_name: delivery_server
-  #   environment:
-  #     - DATABASE_HOST=$DELIVERY_APP_DATABASE_HOST
-  #     - DATABASE_PORT=$DELIVERY_APP_DATABASE_PORT
-  #     - DATABASE_LOGIN=$DELIVERY_APP_DATABASE_LOGIN
-  #     - DATABASE_PASSWORD=$DELIVERY_APP_DATABASE_PASSWORD
-  #     - DATABASE_NAME=$DELIVERY_APP_DATABASE_NAME
-  #     - APP_PORT=$DELIVERY_APP_PORT
-  #     - URL_USER_SERVICE=$URL_USER_SERVICE
-  #   ports:
-  #     - $DELIVERY_APP_EXTERNAL_PORT:$DELIVERY_APP_PORT
-  #   networks:
-  #     - delivery-network
-  #   depends_on:
-  #     proxysql:
-  #       condition: service_healthy
+  delivery_server:
+    build:
+      context: delivery_server
+      dockerfile: Dockerfile
+    container_name: delivery_server
+    environment:
+      - DATABASE_HOST=$DELIVERY_APP_DATABASE_HOST
+      - DATABASE_PORT=$DELIVERY_APP_DATABASE_PORT
+      - DATABASE_LOGIN=$DELIVERY_APP_DATABASE_LOGIN
+      - DATABASE_PASSWORD=$DELIVERY_APP_DATABASE_PASSWORD
+      - DATABASE_NAME=$DELIVERY_APP_DATABASE_NAME
+      - APP_PORT=$DELIVERY_APP_PORT
+      - URL_USER_SERVICE=$DELIVERY_APP_URL_USER_SERVICE
+    ports:
+      - $DELIVERY_APP_EXTERNAL_PORT:$DELIVERY_APP_PORT
+    networks:
+      - delivery-network
+    depends_on:
+      proxysql:
+        condition: service_healthy
+
+
+  user_writer_service:
+    build:
+      context: writer_user
+      dockerfile: Dockerfile
+    container_name: delivery_user_writer
+    environment:
+      - DATABASE_HOST=$DELIVERY_APP_DATABASE_HOST
+      - DATABASE_PORT=$DELIVERY_APP_DATABASE_PORT
+      - DATABASE_LOGIN=$DELIVERY_APP_DATABASE_LOGIN
+      - DATABASE_PASSWORD=$DELIVERY_APP_DATABASE_PASSWORD
+      - DATABASE_NAME=$DELIVERY_APP_DATABASE_NAME
+      - CACHE_ADRESS=$USER_APP_CACHE_ADRESS
+      - QUEUE_HOST=$USER_APP_QUEUE_HOST
+      - QUEUE_TOPIC=$USER_APP_QUEUE_TOPIC
+      - QUEUE_GROUP_ID=$USER_APP_QUEUE_GROUP_ID
+    networks:
+      - delivery-network
+    depends_on:
+      proxysql:
+        condition: service_healthy
 
 
 volumes:
