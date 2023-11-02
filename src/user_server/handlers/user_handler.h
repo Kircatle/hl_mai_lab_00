@@ -326,53 +326,63 @@ class UserHandler : public HTTPRequestHandler
 
                 else if (path == "/user/auth" && request.getMethod() == HTTPRequest::HTTP_GET)
                 {
-                    std::string login;
-                    std::string password;
-                    std::string scheme;
-                    std::string info;
-                    request.getCredentials(scheme, info);
-                    get_identity(info,login,password);
-                    std::optional<models::User> result;
-                    std::cout << login << password;
-                    if (login.empty())
+                    try
                     {
-                        send_not_found_exception("Missing login", "/user/auth", response);
-                        return;
-                    }
-                    else if (password.empty())
-                    {
-                        send_not_found_exception("Missing password", "/user/auth", response);
-                        return;
-                    }
-                   
-                    if (!login.empty())
-                    {
-                        result = models::User::auth_by_login(login, password);
-                    }
-                    else
-                    {
-                        response.setStatus(Poco::Net::HTTPResponse::HTTPStatus::HTTP_NOT_ACCEPTABLE);
-                        Poco::JSON::Object::Ptr json = new Poco::JSON::Object();
-                        json->set("title", "Internal exception");
-                        json->set("status", "406");
-                        json->set("detail", "Unallowes authorize method");
-                        json->set("instance", "/user");
-                        std::ostream &ostr = response.send();
-                        Poco::JSON::Stringifier::stringify(json, ostr);
-                        return;
-                    }
+
+                        std::string login;
+                        std::string password;
+                        std::string scheme;
+                        std::string info;
+                        request.getCredentials(scheme, info);
+                        get_identity(info,login,password);
+                        std::optional<models::User> result;
+                        std::cout << login << password;
+                        if (login.empty())
+                        {
+                            send_not_found_exception("Missing login", "/user/auth", response);
+                            return;
+                        }
+                        else if (password.empty())
+                        {
+                            send_not_found_exception("Missing password", "/user/auth", response);
+                            return;
+                        }
                     
-                    if (result)
-                    {
-                        response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
-                        std::ostream &ostr = response.send();
-                        ostr << "{ \"id\" : \"" << result->get_user_uuid() << "\"}" << std::endl;
-                        // Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                        if (!login.empty())
+                        {
+                            result = models::User::auth_by_login(login, password);
+                        }
+                        else
+                        {
+                            response.setStatus(Poco::Net::HTTPResponse::HTTPStatus::HTTP_NOT_ACCEPTABLE);
+                            Poco::JSON::Object::Ptr json = new Poco::JSON::Object();
+                            json->set("title", "Internal exception");
+                            json->set("status", "406");
+                            json->set("detail", "Unallowes authorize method");
+                            json->set("instance", "/user");
+                            std::ostream &ostr = response.send();
+                            Poco::JSON::Stringifier::stringify(json, ostr);
+                            return;
+                        }
+                        
+                        if (result)
+                        {
+                            response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                            std::ostream &ostr = response.send();
+                            ostr << "{ \"id\" : \"" << result->get_user_uuid() << "\"}" << std::endl;
+                            return;
+                            // Poco::JSON::Stringifier::stringify(result->to_json(), ostr);
+                        }
+                        else
+                        {
+                            send_not_found_exception("User not found", "/user", response);
+                            return;
+                        }
                     }
-                    else
-                    {
-                        send_not_found_exception("User not found", "/user", response);
-                        return;
+                    catch (std::exception &e){
+                            std::cout << "Error auth" << e.what() << std::endl;
+                            response.setStatus(HTTPResponse::HTTP_INTERNAL_SERVER_ERROR);
+                            return;
                     }
                 }
                 else if (path == "/user/find" && request.getMethod() == HTTPRequest::HTTP_GET && (form.has("login") || form.has("email") || (form.has("first_name") && form.has("last_name"))))
