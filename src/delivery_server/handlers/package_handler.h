@@ -269,7 +269,7 @@ class PackageHandler : public HTTPRequestHandler
                         Poco::JSON::Parser parser;
                         Poco::Dynamic::Var result = parser.parse(requestBody);
                         Poco::JSON::Object::Ptr object = result.extract<Poco::JSON::Object::Ptr>();
-                        user_uuid = object->getValue<std::string>("user_uuid");
+                        user_uuid = object->getValue<std::string>("user_id");
                         title = object->getValue<std::string>("title");
                         width = object->getValue<double>("width");
                         height = object->getValue<double>("height");

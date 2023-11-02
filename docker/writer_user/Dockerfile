@@ -6,7 +6,7 @@ RUN git clone -b poco-1.11.7-release https://github.com/pocoproject/poco.git && 
 RUN git clone https://github.com/edenhill/librdkafka.git && cd librdkafka && ./configure && make && make install && cd ..
 RUN git clone https://github.com/mfontanini/cppkafka && cd cppkafka && mkdir build  && cd build  && cmake .. && make && make install  && cd .. && cd ..
 RUN git clone https://github.com/tdv/redis-cpp.git && cd redis-cpp && mkdir build && cd build && cmake .. && make && make install && cd .. && cd ..
-ARG CACHEBUST=1
+ARG CACHEBUST=1123123123123
 RUN git clone https://github.com/Kircatle/hl_mai_lab_00.git
 RUN sudo ldconfig
 RUN cd hl_mai_lab_00/src && mkdir build && cd build && cmake .. && make
