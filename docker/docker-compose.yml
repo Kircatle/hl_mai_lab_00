@@ -152,8 +152,8 @@ services:
     networks:
       - delivery-network
     depends_on:
-      proxysql:
-        condition: service_healthy
+      - proxysql
+      - user_writer_service
     
   delivery_server:
     build:
@@ -173,8 +173,8 @@ services:
     networks:
       - delivery-network
     depends_on:
-      proxysql:
-        condition: service_healthy
+      - proxysql
+      - user_server
 
 
   user_writer_service:
@@ -195,8 +195,9 @@ services:
     networks:
       - delivery-network
     depends_on:
-      proxysql:
-        condition: service_healthy
+      - proxysql
+      - kafka-node-1
+      - zookeeper
 
 
 volumes:
