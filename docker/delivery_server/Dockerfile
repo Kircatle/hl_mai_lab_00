@@ -9,6 +9,5 @@ RUN git clone https://github.com/tdv/redis-cpp.git && cd redis-cpp && mkdir buil
 ARG CACHEBUST=1
 RUN git clone https://github.com/Kircatle/hl_mai_lab_00.git
 RUN sudo ldconfig
-ARG CACHEBUST=1
 RUN cd hl_mai_lab_00/src && mkdir build && cd build && cmake .. && make
 ENTRYPOINT [ "hl_mai_lab_00/src/build/delivery_service" ]
